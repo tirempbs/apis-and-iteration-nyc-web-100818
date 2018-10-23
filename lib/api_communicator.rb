@@ -2,17 +2,50 @@ require 'rest-client'
 require 'json'
 require 'pry'
 
+
+
 def get_character_movies_from_api(character)
   #make the web request
   response_string = RestClient.get('http://www.swapi.co/api/people/')
   response_hash = JSON.parse(response_string)
-  
-  # NOTE: in this demonstration we name many of the variables _hash or _array. 
+
+  characters = response_hash["results"]
+  # iterate over the response hash to find the collection of `films` for the given
+  #   `character` --DONE
+  selected_character = characters.find do |person|
+    person["name"] == character
+  end
+
+  while selected_character == nil && response_hash["next"]
+    response_string = RestClient.get(response_hash["next"])
+    response_hash = JSON.parse(response_string)
+    characters = response_hash["results"]
+    selected_character = characters.find do |person|
+      person["name"] == character
+    end
+  end
+  if selected_character == nil && !response_hash["next"]
+      puts "SIKE!!!!!"
+  else
+    while selected_character == nil && response_hash["next"]
+      response_string = RestClient.get(response_hash["next"])
+      response_hash = JSON.parse(response_string)
+      characters = response_hash["results"]
+      selected_character = characters.find do |person|
+        person["name"] == character
+      end
+    end
+  end
+
+  selected_character["films"].map do |film|
+    film_response = RestClient.get(film)
+    film_hash = JSON.parse(film_response)
+
+  end
+
+  # NOTE: in this demonstration we name many of the variables _hash or _array.
   # This is done for educational purposes. This is not typically done in code.
 
-
-  # iterate over the response hash to find the collection of `films` for the given
-  #   `character`
   # collect those film API urls, make a web request to each URL to get the info
   #  for that film
   # return value of this method should be collection of info about each film.
@@ -24,6 +57,9 @@ end
 
 def print_movies(films_hash)
   # some iteration magic and puts out the movies in a nice list
+films_hash.each do |film|
+  puts film["title"]
+  end
 end
 
 def show_character_movies(character)
